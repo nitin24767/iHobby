@@ -11,5 +11,6 @@ export async function GET() {
   }
 
   const report = await getReadinessReport();
-  return NextResponse.json(report, { status: report.readyForNonPaymentLaunch ? 200 : 503 });
+  const ready = report.deploymentMode === "demo" ? report.readyForDemo : report.readyForNonPaymentLaunch;
+  return NextResponse.json(report, { status: ready ? 200 : 503 });
 }
