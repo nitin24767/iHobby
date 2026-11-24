@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { ListingCard } from "@/components/listing-card";
 import { SiteShell } from "@/components/site-shell";
 import { Badge, Card, LinkButton } from "@/components/ui";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 import { listMarketplaceCategories, listMarketplaceListings } from "@/lib/server/marketplace";
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -12,7 +13,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const category = categories.find((item) => item.slug === slug);
   if (!category) notFound();
 
-  const listings = await listMarketplaceListings({ category: category.slug, sort: "newest" });
+  const [listings, currency] = await Promise.all([
+    listMarketplaceListings({ category: category.slug, sort: "newest" }),
+    getApplicationCurrency()
+  ]);
 
   return (
     <SiteShell>
@@ -40,7 +44,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard key={listing.id} listing={listing} currency={currency} />
           ))}
         </section>
       </div>

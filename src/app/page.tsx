@@ -6,6 +6,7 @@ import { SiteShell } from "@/components/site-shell";
 import { Badge, Card, LinkButton } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/money";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 import {
   getMarketplaceScopeWithCounts,
   listComponentMarketplace,
@@ -44,7 +45,10 @@ export default async function Home({ searchParams }: PageProps) {
   const condition = params.condition ?? "all";
   const minPrice = parsePriceParam(params.minPrice);
   const maxPrice = parsePriceParam(params.maxPrice);
-  const scope = await getMarketplaceScopeWithCounts({ query, condition, minPrice, maxPrice });
+  const [scope, currency] = await Promise.all([
+    getMarketplaceScopeWithCounts({ query, condition, minPrice, maxPrice }),
+    getApplicationCurrency()
+  ]);
   const vehicleType = scope.vehicleTypes.some((item) => item.id === params.vehicleType) ? params.vehicleType ?? "all" : "all";
   const componentOptions = scope.componentTypes[vehicleType] ?? scope.componentTypes.all;
   const compType = componentOptions.some((item) => item.id === params.compType) ? params.compType ?? "all" : "all";
@@ -257,13 +261,13 @@ export default async function Home({ searchParams }: PageProps) {
       {section === "vehicles" ? (
         <section className="grid-listings" aria-label="Vehicle listings">
           {vehicleListings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard key={listing.id} listing={listing} currency={currency} />
           ))}
         </section>
       ) : (
         <section className="grid-listings" aria-label="Component listings">
           {filteredComponents.map((component) => (
-            <ComponentCard key={component.id} component={component} />
+            <ComponentCard key={component.id} component={component} currency={currency} />
           ))}
         </section>
       )}
@@ -283,7 +287,7 @@ export default async function Home({ searchParams }: PageProps) {
   );
 }
 
-function ComponentCard({ component }: { component: ComponentListing }) {
+function ComponentCard({ component, currency }: { component: ComponentListing; currency: string }) {
   return (
     <article className="listing">
       <div className="listing-img">
@@ -302,7 +306,7 @@ function ComponentCard({ component }: { component: ComponentListing }) {
         <div className="listing-row">
           <div>
             <div className="listing-bid-label mono upper">Price</div>
-            <div className="listing-price mono">{formatMoney(component.priceCents)}</div>
+            <div className="listing-price mono">{formatMoney(component.priceCents, currency)}</div>
           </div>
           <div className="listing-time mono">Ships 2d</div>
         </div>

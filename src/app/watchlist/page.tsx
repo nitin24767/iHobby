@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui";
 import { getCurrentActor } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { listWatchlistListings } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 
 export default async function WatchlistPage() {
   const actor = await getCurrentActor();
@@ -18,7 +19,7 @@ export default async function WatchlistPage() {
     );
   }
 
-  const listings = await listWatchlistListings(actor);
+  const [listings, currency] = await Promise.all([listWatchlistListings(actor), getApplicationCurrency()]);
 
   return (
     <SiteShell>
@@ -32,7 +33,7 @@ export default async function WatchlistPage() {
         </div>
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {listings.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
+            <ListingCard key={listing.id} listing={listing} currency={currency} />
           ))}
         </section>
       </div>

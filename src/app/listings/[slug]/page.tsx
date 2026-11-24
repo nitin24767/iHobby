@@ -14,6 +14,7 @@ import { Badge, Button, Card, Field, Input, Textarea } from "@/components/ui";
 import { getCurrentActor } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
 import { getListingDetailBySlug, getSellerReviewEligibilityForActor, listBidsForListing } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 import { canPlaceBid, minimumNextBid } from "@/lib/transactions";
 
 export default async function ListingDetailPage({
@@ -31,9 +32,10 @@ export default async function ListingDetailPage({
   const actor = await getCurrentActor();
   const nextBid = minimumNextBid(listing.priceCents);
   const bidDecision = canPlaceBid(listing, actor.id, nextBid);
-  const [listingBids, reviewEligibility] = await Promise.all([
+  const [listingBids, reviewEligibility, currency] = await Promise.all([
     listBidsForListing(listing.id),
-    getSellerReviewEligibilityForActor(actor, listing.id)
+    getSellerReviewEligibilityForActor(actor, listing.id),
+    getApplicationCurrency()
   ]);
   const fallbackMedia = { url: "/media/drone-marketplace.svg", alt: listing.title };
   const media = listing.media.length ? listing.media : [fallbackMedia];
@@ -81,7 +83,7 @@ export default async function ListingDetailPage({
               <div className="text-sm text-[var(--ink-muted)]">{listing.listingType === "AUCTION" ? "Current bid" : "Price"}</div>
               <Badge tone={listing.listingType === "AUCTION" ? "bad" : "info"}>{listing.listingType.replace("_", " ")}</Badge>
             </div>
-            <div className="bid-amount mono">{formatMoney(listing.priceCents, listing.currency)}</div>
+            <div className="bid-amount mono">{formatMoney(listing.priceCents, currency)}</div>
             <div className="mt-3 grid gap-2 text-sm text-[var(--ink-muted)]">
               <span className="flex items-center gap-2">
                 <MapPin size={16} /> {listing.location}
@@ -145,7 +147,7 @@ export default async function ListingDetailPage({
                     <div className="capitalize">{bid.status.toLowerCase()}</div>
                     <div className="mono text-[10px] text-[var(--ink-4)]">{new Date(bid.createdAt).toLocaleTimeString("en-US")}</div>
                   </div>
-                  <span className="mono">{formatMoney(bid.amountCents)}</span>
+                  <span className="mono">{formatMoney(bid.amountCents, currency)}</span>
                 </div>
               ))}
               {listingBids.length === 0 ? <div className="text-sm text-[var(--ink-muted)]">No bids yet.</div> : null}

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { getCurrentActor } from "@/lib/auth";
+import { hasExpectedImageSignature, isListingImageType } from "@/lib/file-signatures";
 import { can } from "@/lib/rbac";
 import { rateLimit, retryAfterSeconds } from "@/lib/rate-limit";
 import { generateStorageKey, uploadFile } from "@/lib/storage";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
 
 export async function POST(request: Request) {
@@ -38,8 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No file field found in form." }, { status: 400 });
   }
 
-  const fileType = file.type as (typeof ALLOWED_TYPES)[number];
-  if (!ALLOWED_TYPES.includes(fileType)) {
+  if (!isListingImageType(file.type)) {
     return NextResponse.json(
       { error: `File type ${file.type} not allowed. Use JPEG, PNG, or WebP.` },
       { status: 400 }
@@ -54,7 +53,7 @@ export async function POST(request: Request) {
   }
 
   const bytes = new Uint8Array(await file.arrayBuffer());
-  if (!hasExpectedImageSignature(fileType, bytes)) {
+  if (!hasExpectedImageSignature(file.type, bytes)) {
     return NextResponse.json(
       { error: "File contents do not match the declared image type." },
       { status: 400 }
@@ -74,19 +73,4 @@ export async function POST(request: Request) {
     console.error("[upload] Failed to save file:", err);
     return NextResponse.json({ error: "Upload failed. Please try again." }, { status: 500 });
   }
-}
-
-function hasExpectedImageSignature(contentType: (typeof ALLOWED_TYPES)[number], bytes: Uint8Array) {
-  if (contentType === "image/jpeg") {
-    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
-  }
-
-  if (contentType === "image/png") {
-    const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-    return signature.every((value, index) => bytes[index] === value);
-  }
-
-  return bytes.length >= 12 &&
-    String.fromCharCode(...bytes.slice(0, 4)) === "RIFF" &&
-    String.fromCharCode(...bytes.slice(8, 12)) === "WEBP";
 }

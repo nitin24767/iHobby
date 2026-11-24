@@ -18,6 +18,7 @@ import {
   reports as fallbackReports
 } from "@/lib/data";
 import { formatMoney } from "@/lib/money";
+import { DEFAULT_APPLICATION_CURRENCY } from "@/lib/currency";
 import { completeAiText } from "@/lib/ai/providers";
 import { normalizeStoredMediaUrl } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
@@ -26,6 +27,7 @@ import { canMakeOffer, canPlaceBid } from "@/lib/transactions";
 import { validateListingDraft, type ListingDraftInput } from "@/lib/validations/listing";
 import { ensureUserForActor, syncClerkRole, syncClerkStatus } from "@/lib/server/users";
 import { createNotification } from "@/lib/server/notifications";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 import { awardReward } from "@/lib/server/rewards";
 import { escapeHtml, sendEmail } from "@/lib/email";
 import type {
@@ -289,8 +291,12 @@ export interface PricingEngineData {
   selectedVehicleFamily: string;
   listingTitle: string;
   listingCondition: string;
+  brand: string;
+  model: string;
+  scale: string;
+  versionModelYear: string;
+  batteryCells: number;
   currentPriceCents: number;
-  includedBatteries: number;
   comparableSales: PricingComparableView[];
   guidance: PricingGuidance;
   note: string;
@@ -862,83 +868,105 @@ export async function getPricingEngineData(vehicleFamily = "drones"): Promise<Pr
   try {
     const scope = await getMarketplaceScopeWithCounts();
     const vehicleTypes = scope.vehicleTypes.filter((item) => item.id !== "all");
-    const category = await prisma.hobbyCategory.findFirst({
-      where: { slug: { in: [selectedVehicleFamily, `rc-${selectedVehicleFamily}`] } }
-    });
-
-    if (!category) {
-      return emptyPricingEngineData(vehicleTypes, selectedVehicleFamily);
-    }
-
-    const [listingRows, acceptedOffers] = await Promise.all([
-      prisma.listing.findMany({
-        where: {
-          categoryId: category.id,
-          status: ListingStatus.ACTIVE,
-          deletedAt: null
-        },
-        include: listingInclude,
-        orderBy: { publishedAt: "desc" },
-        take: 8
-      }),
-      prisma.offer.findMany({
-        where: {
-          status: OfferStatus.ACCEPTED,
-          listing: { categoryId: category.id, status: ListingStatus.SOLD, deletedAt: null }
-        },
-        select: {
-          id: true,
-          amountCents: true,
-          updatedAt: true,
-          listing: { select: { title: true, condition: true } }
-        },
-        orderBy: { updatedAt: "desc" },
-        take: 8
-      })
-    ]);
-
-    const listing = listingRows.map(mapListingRow).find((item) => item.hobbyName === "Vehicles") ?? null;
-    const comparableSales = acceptedOffers.map((row) => ({
-      id: row.id,
-      title: row.listing.title,
-      condition: row.listing.condition,
-      soldPriceCents: row.amountCents,
-      soldAt: row.updatedAt.toISOString()
-    }));
-    const guidance = buildPricingGuidance({
-      listingPriceCents: listing?.priceCents ?? 0,
-      buyNowCents: listing?.buyNowCents,
-      comparablePrices: comparableSales.map((item) => item.soldPriceCents)
-    });
-
-    return {
-      vehicleTypes,
-      selectedVehicleFamily,
-      listingTitle: listing?.title ?? "",
-      listingCondition: listing?.condition ?? "",
-      currentPriceCents: listing?.priceCents ?? 0,
-      includedBatteries: numberAttribute(listing?.attributes.batteryCount) ?? 0,
-      comparableSales,
-      guidance,
-      note: buildPricingNote(listing?.priceCents ?? 0, guidance, comparableSales.length)
-    };
+    return emptyPricingEngineData(vehicleTypes, selectedVehicleFamily);
   } catch {
     return emptyPricingEngineData(defaultVehicleTypes, selectedVehicleFamily);
   }
 }
 
-export async function getPricingGuidanceForInput(vehicleFamily: string, targetPriceCents: number) {
-  const pricing = await getPricingEngineData(vehicleFamily);
+export async function getPricingGuidanceForInput(
+  vehicleFamily: string,
+  targetPriceCents: number,
+  title = "",
+  condition = ""
+) {
+  const selectedVehicleFamily = normalizeVehicleType(vehicleFamily);
+  const [category, currency] = await Promise.all([
+    prisma.hobbyCategory.findFirst({ where: { slug: { in: [selectedVehicleFamily, `rc-${selectedVehicleFamily}`] } } }).catch(() => null),
+    getApplicationCurrency()
+  ]);
+  const stored = category ? await getStoredPricingComparables(category.id).catch(() => []) : [];
+  const comparableSales = selectRelevantComparables(stored, title, condition);
   const guidance = buildPricingGuidance({
     listingPriceCents: targetPriceCents,
-    comparablePrices: pricing.comparableSales.map((sale) => sale.soldPriceCents)
+    comparablePrices: comparableSales.map((sale) => sale.soldPriceCents)
   });
 
   return {
-    comparableSales: pricing.comparableSales,
+    comparableSales,
     guidance,
-    note: buildPricingNote(targetPriceCents, guidance, pricing.comparableSales.length)
+    note: buildPricingNote(targetPriceCents, guidance, comparableSales.length, currency)
   };
+}
+
+async function getStoredPricingComparables(categoryId: string): Promise<PricingComparableView[]> {
+  const [persisted, acceptedOffers] = await Promise.all([
+    prisma.pricingComparable.findMany({
+      where: { categoryId },
+      orderBy: { soldAt: "desc" },
+      take: 30
+    }),
+    prisma.offer.findMany({
+      where: {
+        status: OfferStatus.ACCEPTED,
+        listing: { categoryId, status: ListingStatus.SOLD, deletedAt: null }
+      },
+      select: {
+        id: true,
+        amountCents: true,
+        updatedAt: true,
+        listing: { select: { title: true, condition: true } }
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 30
+    })
+  ]);
+
+  return [
+    ...acceptedOffers.map((row) => ({
+      id: row.id,
+      title: row.listing.title,
+      condition: row.listing.condition,
+      soldPriceCents: row.amountCents,
+      soldAt: row.updatedAt.toISOString()
+    })),
+    ...persisted.map((row) => ({
+      id: row.id,
+      title: row.title,
+      condition: row.condition,
+      soldPriceCents: row.soldPriceCents,
+      soldAt: row.soldAt.toISOString()
+    }))
+  ];
+}
+
+export function selectRelevantComparables(
+  comparables: PricingComparableView[],
+  title: string,
+  condition = ""
+) {
+  if (!title.trim()) return comparables.slice(0, 8);
+  const titleTokens = pricingTitleTokens(title);
+  const normalizedCondition = condition.trim().toLowerCase();
+  return comparables
+    .map((item) => {
+      const itemTokens = pricingTitleTokens(item.title);
+      const shared = [...titleTokens].filter((token) => itemTokens.has(token)).length;
+      const similarity = titleTokens.size ? shared / titleTokens.size : 0;
+      const conditionBonus = normalizedCondition && item.condition.toLowerCase() === normalizedCondition ? 0.15 : 0;
+      return { item, score: similarity + conditionBonus };
+    })
+    .filter(({ score }) => score >= 0.34)
+    .sort((left, right) => right.score - left.score || Date.parse(right.item.soldAt) - Date.parse(left.item.soldAt))
+    .slice(0, 8)
+    .map(({ item }) => item);
+}
+
+function pricingTitleTokens(title: string) {
+  const ignored = new Set(["the", "and", "with", "kit", "bundle", "set", "new", "used", "rc", "for", "plus"]);
+  return new Set(
+    title.toLowerCase().replace(/[^a-z0-9+.-]+/g, " ").split(/\s+/).filter((token) => token.length >= 2 && !ignored.has(token))
+  );
 }
 
 export function buildPricingGuidance(input: {
@@ -1426,7 +1454,10 @@ export async function createListingFromDraft(actor: Actor, input: ListingDraftIn
       return { mode: "invalid" as const, error: categoryValidation.error.flatten() };
     }
 
-    const user = await ensureUserForActor(actor);
+    const [user, currency] = await Promise.all([
+      ensureUserForActor(actor),
+      getApplicationCurrency()
+    ]);
     const slug = await uniqueListingSlug(input.title);
     const defaultMedia = defaultMediaForCategory(input.categorySlug);
     const endsAt = input.listingType === "AUCTION"
@@ -1449,7 +1480,7 @@ export async function createListingFromDraft(actor: Actor, input: ListingDraftIn
         priceCents: input.priceCents,
         reserveCents: input.reserveCents,
         buyNowCents: input.buyNowCents,
-        currency: "USD",
+        currency,
         location: input.location,
         endsAt,
         attributes: input.attributes,
@@ -2588,24 +2619,28 @@ function emptyPricingEngineData(
     selectedVehicleFamily,
     listingTitle: "",
     listingCondition: "",
+    brand: "",
+    model: "",
+    scale: "",
+    versionModelYear: "",
+    batteryCells: 0,
     currentPriceCents: 0,
-    includedBatteries: 0,
     comparableSales: [],
     guidance: { conservativeCents: 0, recommendedCents: 0, buyNowCents: 0 },
     note: "No active listing or accepted marketplace offers are available for this vehicle family yet."
   };
 }
 
-function buildPricingNote(currentPriceCents: number, guidance: PricingGuidance, comparableCount: number) {
+function buildPricingNote(currentPriceCents: number, guidance: PricingGuidance, comparableCount: number, currency = DEFAULT_APPLICATION_CURRENCY) {
   if (comparableCount === 0) {
     return "No accepted marketplace offers are available yet, so the estimate is based only on the entered asking price.";
   }
 
   if (currentPriceCents > guidance.recommendedCents) {
-    return `${formatMoney(currentPriceCents)} is above the accepted-offer average. Strong proof media, battery cycle counts, and service notes should support the asking price.`;
+    return `${formatMoney(currentPriceCents, currency)} is above the accepted-offer average. Strong proof media, battery cycle counts, and service notes should support the asking price.`;
   }
 
-  return `${formatMoney(currentPriceCents)} is inside the accepted-offer range. Verified accessories and battery cycle counts support the recommended range.`;
+  return `${formatMoney(currentPriceCents, currency)} is inside the accepted-offer range. Verified accessories and battery cycle counts support the recommended range.`;
 }
 
 function roundToNearestHundred(value: number) {

@@ -7,6 +7,7 @@ import { getCurrentActor } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
 import { can } from "@/lib/rbac";
 import { getBuildWorkshopForActor } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 
 export default async function BuildPlannerPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const actor = await getCurrentActor();
@@ -20,7 +21,7 @@ export default async function BuildPlannerPage({ searchParams }: { searchParams:
     );
   }
 
-  const build = await getBuildWorkshopForActor(actor);
+  const [build, currency] = await Promise.all([getBuildWorkshopForActor(actor), getApplicationCurrency()]);
   const toolbarParts = build.parts.slice(0, 4);
 
   return (
@@ -44,7 +45,7 @@ export default async function BuildPlannerPage({ searchParams }: { searchParams:
             </select>
           </Field>
           <Field label="Dry weight (g)"><Input name="dryWeightGrams" type="number" min="0" defaultValue={build.dryWeightGrams || ""} required /></Field>
-          <Field label="Estimated cost (USD)"><Input name="estimatedCost" inputMode="decimal" defaultValue={build.estimatedCostCents ? (build.estimatedCostCents / 100).toFixed(2) : ""} required /></Field>
+          <Field label={`Estimated cost (${currency})`}><Input name="estimatedCost" inputMode="decimal" defaultValue={build.estimatedCostCents ? (build.estimatedCostCents / 100).toFixed(2) : ""} required /></Field>
           <Field label="Thrust ratio"><Input name="thrustRatio" defaultValue={build.thrustRatio === "-" ? "" : build.thrustRatio} placeholder="e.g. 6.2:1" required /></Field>
           <Field label="Build note"><Input name="note" defaultValue={build.note.startsWith("No saved") ? "" : build.note} /></Field>
           <div className="md:col-span-2 xl:col-span-3"><Field label="Parts and ratings (one per line: Slot: specification)"><Textarea name="parts" defaultValue={build.parts.map((part) => `${part.slot}: ${part.selected}`).join("\n")} placeholder={"Frame: 5 inch carbon frame\nMotor set: 2207 1750KV 35A\nESC: 45A 3-6S\nBattery: 6S 1300mAh"} /></Field></div>
@@ -104,7 +105,7 @@ export default async function BuildPlannerPage({ searchParams }: { searchParams:
           <h2 className="text-lg font-bold">Summary</h2>
           <div className="mt-4 sim-readout">
             <Readout label="Dry weight" value={`${build.dryWeightGrams} g`} />
-            <Readout label="Cost" value={formatMoney(build.estimatedCostCents)} />
+            <Readout label="Cost" value={formatMoney(build.estimatedCostCents, currency)} />
             <Readout label="Thrust" value={build.thrustRatio} />
             <Readout label="Risk" value={build.riskLevel} />
           </div>

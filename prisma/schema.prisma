@@ -120,6 +120,7 @@ model User {
   authSessions    AuthSession[]
   reviewsWritten  SellerReview[]            @relation("BuyerReviews")
   reviewsReceived SellerReview[]            @relation("SellerReviews")
+  pricingSearches PricingSearch[]
 }
 
 model AuthSession {
@@ -180,7 +181,7 @@ model Listing {
   priceCents     Int
   reserveCents   Int?
   buyNowCents    Int?
-  currency       String             @default("USD")
+  currency       String             @default("INR")
   location       String
   attributes     Json               @default("{}")
   publishedAt    DateTime?
@@ -424,6 +425,37 @@ model PricingComparable {
   @@index([categoryId, soldAt])
 }
 
+model PricingSearch {
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleFamily      String
+  title              String
+  brand              String
+  itemModel          String
+  scale              String?
+  versionModelYear   String?
+  cellCount          Int?
+  condition          String
+  targetPriceCents   Int
+  currency           String
+  status             String   @default("PENDING")
+  provider           String?
+  providerModel      String?
+  summary            String?
+  conservativeCents  Int?
+  recommendedCents   Int?
+  buyNowCents        Int?
+  confidence         String?
+  evidenceCount      Int?
+  webComparables     Json     @default("[]")
+  createdAt          DateTime @default(now())
+  completedAt        DateTime?
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
 model AuditLog {
   id        String   @id @default(uuid())
   actorId   String?
@@ -433,6 +465,12 @@ model AuditLog {
   entityId  String?
   metadata  Json     @default("{}")
   createdAt DateTime @default(now())
+}
+
+model ApplicationSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }
 
 model SellerApplication {

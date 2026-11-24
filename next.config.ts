@@ -21,7 +21,7 @@ function storageImagePatterns(): NonNullable<NextConfig["images"]>["remotePatter
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
-  serverExternalPackages: ["nodemailer"],
+  serverExternalPackages: ["nodemailer", "pdf-parse"],
   images: {
     remotePatterns: storageImagePatterns()
   },

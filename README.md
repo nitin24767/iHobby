@@ -20,7 +20,7 @@ Implemented and database-backed:
 - Buyer, seller, and admin dashboards with role-specific counts.
 - Seller application and admin seller approval workflow.
 - Seller listing creation as `PENDING_REVIEW`.
-- Admin reports, listing moderation, category/taxonomy management, user lifecycle/profile controls, and persisted audit screens.
+- Admin reports, listing moderation, category/taxonomy management, application-wide currency settings, user lifecycle/profile controls, and persisted audit screens.
 - Credits/wallet ledger.
 - Build planner data.
 - Repair advisor sessions.
@@ -32,6 +32,8 @@ Implemented and database-backed:
 - Admin-only readiness health report at `/api/health/readiness`.
 - HTTP workflow smoke runner for public, buyer, seller, admin, and API checks.
 - AI provider abstraction with mock, Groq, DeepSeek, and Hugging Face modes.
+- Evidence-based pricing with Groq Compound web search, exact source links, condition adjustment, outlier resistance, and explicit confidence.
+- Bounded agentic marketplace assistant with plan-act-observe tool use and persisted `AiJob` audit history.
 
 Still intentionally out of scope until a payment provider is chosen:
 
@@ -167,12 +169,14 @@ See [.env.example](./.env.example).
 Important variables:
 
 - `DATABASE_URL`: PostgreSQL connection string.
+- `APP_CURRENCY`: fallback ISO currency used until the database-backed admin setting is available; defaults to `INR`.
 - `NEXT_PUBLIC_APP_URL`: Public app URL.
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`: Clerk browser key.
 - `CLERK_SECRET_KEY`: Clerk server key.
 - `CLERK_WEBHOOK_SECRET`: Clerk webhook verification secret.
-- `AI_PROVIDER`: `mock`, `groq`, `deepseek`, or `huggingface`.
-- `GROQ_API_KEY`, `GROQ_MODEL`: Groq provider configuration.
+- `AI_PROVIDER`: `mock`, `gemini`, `groq`, `deepseek`, or `huggingface` for non-pricing AI features.
+- `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_PRICING_MODEL`: Gemini configuration. Pricing research uses Gemini 3.8 Flash with Google Search first when a key is configured.
+- `GROQ_API_KEY`, `GROQ_MODEL`, `GROQ_PRICING_MODEL`: Groq configuration. Pricing research uses direct retailer evidence when available, then falls back to GPT-OSS 20B browser search.
 - `DEEPSEEK_API_KEY`, `DEEPSEEK_MODEL`: DeepSeek provider config.
 - `HUGGINGFACE_API_KEY`, `HUGGINGFACE_MODEL`: Hugging Face provider config.
 - `STORAGE_*`: S3-compatible object storage settings. `STORAGE_PUBLIC_URL` is required for production media delivery.
@@ -304,6 +308,7 @@ Admin:
 - `/admin/seller-applications`
 - `/admin/users`
 - `/admin/categories`
+- `/admin/settings`
 - `/admin/audit`
 
 APIs:
@@ -358,8 +363,11 @@ Current AI API routes:
 
 - `POST /api/ai/listing-assistant`
 - `POST /api/ai/pricing`
+- `POST /api/ai/agent`
 
-Both routes validate input with Zod, enforce `ai:use`, and rate-limit by actor ID.
+All routes validate input with Zod, enforce `ai:use`, and rate-limit by actor ID.
+
+The marketplace agent at `/tools/agent` accepts a member goal and runs a bounded multi-step loop. It can search active inventory, inspect listing details, calculate persisted pricing guidance, and read the signed-in member's role-scoped marketplace activity. Each tool observation is shown to the member and the completed run is stored in `AiJob`. The initial tool set is read-only; bids, offers, messages, listing changes, and moderation remain explicit user actions.
 
 ## Validation
 

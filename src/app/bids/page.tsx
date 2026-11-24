@@ -6,6 +6,7 @@ import { getCurrentActor } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
 import { can } from "@/lib/rbac";
 import { listBidsForActor, listMarketplaceListings } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 
 export default async function BidsPage() {
   const actor = await getCurrentActor();
@@ -18,8 +19,11 @@ export default async function BidsPage() {
     );
   }
 
-  const bids = await listBidsForActor(actor);
-  const listings = await listMarketplaceListings();
+  const [bids, listings, currency] = await Promise.all([
+    listBidsForActor(actor),
+    listMarketplaceListings(),
+    getApplicationCurrency()
+  ]);
 
   return (
     <SiteShell>
@@ -40,7 +44,7 @@ export default async function BidsPage() {
                   </div>
                   <Badge tone={bid.status === "WINNING" ? "good" : "neutral"}>{bid.status.toLowerCase()}</Badge>
                   <div className="flex items-center gap-3">
-                    <span className="font-bold">{formatMoney(bid.amountCents)}</span>
+                    <span className="font-bold">{formatMoney(bid.amountCents, currency)}</span>
                     {listing ? <LinkButton href={`/listings/${listing.slug}`} size="sm">Open</LinkButton> : null}
                   </div>
                 </div>

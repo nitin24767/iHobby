@@ -7,6 +7,7 @@ import { getCurrentActor } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
 import { can } from "@/lib/rbac";
 import { listAdminListings, listReportsForAdmin } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 
 export default async function AdminListingsPage({
   searchParams
@@ -25,7 +26,11 @@ export default async function AdminListingsPage({
   }
 
   const activeTab = tab === "all" || tab === "reports" ? tab : "queue";
-  const [reports, allListings] = await Promise.all([listReportsForAdmin(), listAdminListings()]);
+  const [reports, allListings, currency] = await Promise.all([
+    listReportsForAdmin(),
+    listAdminListings(),
+    getApplicationCurrency()
+  ]);
   const pendingListings = allListings.filter((l) => l.status === "PENDING_REVIEW");
 
   return (
@@ -68,7 +73,7 @@ export default async function AdminListingsPage({
                         <Badge tone="neutral">{listing.categoryName}</Badge>
                       </div>
                       <div className="mt-1 text-sm text-[var(--ink-muted)]">
-                        Seller: {listing.sellerName} · {formatMoney(listing.priceCents)} · Submitted {new Date(listing.createdAt).toLocaleDateString()}
+                        Seller: {listing.sellerName} · {formatMoney(listing.priceCents, currency)} · Submitted {new Date(listing.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -101,7 +106,7 @@ export default async function AdminListingsPage({
                       <StatusBadge status={listing.status} />
                     </div>
                     <div className="mt-0.5 text-xs text-[var(--ink-muted)]">
-                      {listing.sellerName} · {listing.categoryName} · {formatMoney(listing.priceCents)}
+                      {listing.sellerName} · {listing.categoryName} · {formatMoney(listing.priceCents, currency)}
                     </div>
                   </div>
                   <LinkButton href={`/listings/${listing.slug}`} size="sm" variant="ghost">

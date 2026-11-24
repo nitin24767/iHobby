@@ -10,6 +10,7 @@ import { getCurrentActor } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
 import { can } from "@/lib/rbac";
 import { listSellerInventory } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 import type { Listing, ListingStatus } from "@/types/domain";
 
 const statusTabs = [
@@ -40,7 +41,7 @@ export default async function SellerListingsPage({
     );
   }
 
-  const inventory = await listSellerInventory(actor);
+  const [inventory, currency] = await Promise.all([listSellerInventory(actor), getApplicationCurrency()]);
   const activeStatus = normalizeStatusFilter(status);
   const visibleListings = activeStatus === "all"
     ? inventory
@@ -88,7 +89,7 @@ export default async function SellerListingsPage({
         {visibleListings.length > 0 ? (
           <div className="divide-y divide-[var(--line)]">
             {visibleListings.map((listing) => (
-              <ListingInventoryRow key={listing.id} listing={listing} />
+              <ListingInventoryRow key={listing.id} listing={listing} currency={currency} />
             ))}
           </div>
         ) : (
@@ -110,7 +111,7 @@ export default async function SellerListingsPage({
   );
 }
 
-function ListingInventoryRow({ listing }: { listing: Listing }) {
+function ListingInventoryRow({ listing, currency }: { listing: Listing; currency: string }) {
   const image = listing.media[0]?.url ?? "/media/drone-marketplace.svg";
   const title = listing.media[0]?.alt ?? listing.title;
 
@@ -135,7 +136,7 @@ function ListingInventoryRow({ listing }: { listing: Listing }) {
           </span>
         </div>
         <div className="mt-3 grid gap-2 text-sm sm:grid-cols-4">
-          <InventoryMetric icon={<Tag size={14} />} label="Price" value={formatMoney(listing.priceCents, listing.currency)} />
+          <InventoryMetric icon={<Tag size={14} />} label="Price" value={formatMoney(listing.priceCents, currency)} />
           <InventoryMetric icon={<Eye size={14} />} label="Watchers" value={String(listing.stats.watchers)} />
           <InventoryMetric icon={<Gavel size={14} />} label="Bids" value={String(listing.stats.bids)} />
           <InventoryMetric icon={<Tag size={14} />} label="Offers" value={String(listing.stats.offers)} />
@@ -162,7 +163,7 @@ function ListingInventoryRow({ listing }: { listing: Listing }) {
           <form action={updateSellerListingAction} className="mt-3 grid gap-3 rounded-md border border-[var(--line)] bg-[var(--background)] p-3 md:grid-cols-2">
             <input type="hidden" name="listingId" value={listing.id} />
             <Field label="Title"><Input name="title" defaultValue={listing.title} /></Field>
-            <Field label="Price (USD)"><Input name="price" inputMode="decimal" defaultValue={(listing.priceCents / 100).toFixed(2)} /></Field>
+            <Field label={`Price (${currency})`}><Input name="price" inputMode="decimal" defaultValue={(listing.priceCents / 100).toFixed(2)} /></Field>
             <Field label="Condition"><Input name="condition" defaultValue={listing.condition} /></Field>
             <Field label="Location"><Input name="location" defaultValue={listing.location} /></Field>
             <div className="md:col-span-2"><Field label="Description"><Textarea name="description" defaultValue={listing.description} /></Field></div>

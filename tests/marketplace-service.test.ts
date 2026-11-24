@@ -12,6 +12,7 @@ import {
   mapConversationSummaryRow,
   normalizeRepairChecklist,
   sendConversationMessage,
+  selectRelevantComparables,
   slugifyListingTitle
 } from "@/lib/server/marketplace";
 import type { Actor } from "@/types/domain";
@@ -202,6 +203,23 @@ describe("marketplace persistence service", () => {
       recommendedCents: 62000,
       buyNowCents: 82000
     });
+  });
+
+  it("excludes category-level comparables for unrelated models", () => {
+    const comparable = (id: string, title: string) => ({
+      id,
+      title,
+      condition: "Like new",
+      soldPriceCents: 6_000_000,
+      soldAt: "2026-09-01T00:00:00.000Z"
+    });
+    const selected = selectRelevantComparables([
+      comparable("evo", "Autel EVO Lite+ fly more bundle"),
+      comparable("dji", "DJI Mini 4 Pro fly more combo"),
+      comparable("fpv", "Custom five inch FPV racing quad")
+    ], "Autel EVO Lite Plus camera drone", "Like new");
+
+    expect(selected.map((item) => item.id)).toEqual(["evo"]);
   });
 
   it("maps persisted conversation messages into the inbox thread", () => {

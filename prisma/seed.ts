@@ -12,6 +12,11 @@ const prisma = new PrismaClient({
 });
 
 const seedNow = new Date();
+const seedUsdToInrRate = 95.791;
+
+function usdToInrMinor(usdCents: number) {
+  return Math.round(usdCents * seedUsdToInrRate);
+}
 
 function daysFromNow(days: number, hour = 12, minute = 0) {
   const date = new Date(seedNow);
@@ -131,9 +136,9 @@ async function main() {
     condition: "Like new",
     listingType: "AUCTION",
     status: "ACTIVE",
-    priceCents: 64200,
-    reserveCents: 70000,
-    buyNowCents: 82000,
+    priceCents: usdToInrMinor(64200),
+    reserveCents: usdToInrMinor(70000),
+    buyNowCents: usdToInrMinor(82000),
     location: "Austin, TX",
     publishedAt: daysAgo(1, 15),
     endsAt: daysFromNow(5, 21),
@@ -167,8 +172,8 @@ async function main() {
     condition: "Excellent",
     listingType: "AUCTION",
     status: "ACTIVE",
-    priceCents: 134000,
-    reserveCents: 150000,
+    priceCents: usdToInrMinor(134000),
+    reserveCents: usdToInrMinor(150000),
     location: "Phoenix, AZ",
     publishedAt: daysAgo(2, 16, 30),
     endsAt: daysFromNow(4, 19),
@@ -193,7 +198,7 @@ async function main() {
     condition: "Very good",
     listingType: "FIXED_PRICE",
     status: "ACTIVE",
-    priceCents: 52500,
+    priceCents: usdToInrMinor(52500),
     location: "Dayton, OH",
     publishedAt: daysAgo(3, 10, 10),
     attributes: {
@@ -217,7 +222,7 @@ async function main() {
     condition: "Good",
     listingType: "OFFER",
     status: "ACTIVE",
-    priceCents: 41000,
+    priceCents: usdToInrMinor(41000),
     location: "Denver, CO",
     publishedAt: daysAgo(4, 18, 20),
     attributes: {
@@ -238,7 +243,7 @@ async function main() {
     slug: "tmotor-f60-pro-v-2207-motor-set",
     title: "T-Motor F60 Pro V 2207 set",
     condition: "Excellent",
-    priceCents: 11800,
+    priceCents: usdToInrMinor(11800),
     location: "Austin, TX",
     vehicleType: "drones",
     componentType: "motor",
@@ -252,7 +257,7 @@ async function main() {
     slug: "speedybee-45a-4in1-esc",
     title: "SpeedyBee 45A 4-in-1 ESC",
     condition: "New",
-    priceCents: 6900,
+    priceCents: usdToInrMinor(6900),
     location: "San Jose, CA",
     vehicleType: "drones",
     componentType: "esc",
@@ -266,7 +271,7 @@ async function main() {
     slug: "sab-770-carbon-main-blades",
     title: "SAB 770 carbon main blades",
     condition: "Like new",
-    priceCents: 17900,
+    priceCents: usdToInrMinor(17900),
     location: "Phoenix, AZ",
     vehicleType: "helis",
     componentType: "blade",
@@ -280,7 +285,7 @@ async function main() {
     slug: "savox-metal-gear-servo-pair",
     title: "Savox metal gear servo pair",
     condition: "Tested",
-    priceCents: 7800,
+    priceCents: usdToInrMinor(7800),
     location: "Dayton, OH",
     vehicleType: "planes",
     componentType: "servo",
@@ -294,7 +299,7 @@ async function main() {
     slug: "proline-hyrax-tire-set",
     title: "Pro-Line Hyrax tire set",
     condition: "New",
-    priceCents: 5400,
+    priceCents: usdToInrMinor(5400),
     location: "Denver, CO",
     vehicleType: "cars",
     componentType: "tire",
@@ -304,14 +309,14 @@ async function main() {
 
   await prisma.bid.upsert({
     where: { id: "seed-bid-1" },
-    update: { listingId: autel.id, bidderId: buyer.id, amountCents: 64200, status: "WINNING" },
-    create: { id: "seed-bid-1", listingId: autel.id, bidderId: buyer.id, amountCents: 64200, status: "WINNING" }
+    update: { listingId: autel.id, bidderId: buyer.id, amountCents: usdToInrMinor(64200), status: "WINNING" },
+    create: { id: "seed-bid-1", listingId: autel.id, bidderId: buyer.id, amountCents: usdToInrMinor(64200), status: "WINNING" }
   });
 
   await prisma.bid.upsert({
     where: { id: "seed-bid-2" },
-    update: { listingId: autel.id, bidderId: admin.id, amountCents: 62500, status: "OUTBID" },
-    create: { id: "seed-bid-2", listingId: autel.id, bidderId: admin.id, amountCents: 62500, status: "OUTBID" }
+    update: { listingId: autel.id, bidderId: admin.id, amountCents: usdToInrMinor(62500), status: "OUTBID" },
+    create: { id: "seed-bid-2", listingId: autel.id, bidderId: admin.id, amountCents: usdToInrMinor(62500), status: "OUTBID" }
   });
 
   await prisma.offer.upsert({
@@ -319,7 +324,7 @@ async function main() {
     update: {
       listingId: heli.id,
       buyerId: buyer.id,
-      amountCents: 124000,
+      amountCents: usdToInrMinor(124000),
       message: "Can arrange insured pickup if the blade set is included.",
       status: "PENDING"
     },
@@ -327,7 +332,7 @@ async function main() {
       id: "seed-offer-1",
       listingId: heli.id,
       buyerId: buyer.id,
-      amountCents: 124000,
+      amountCents: usdToInrMinor(124000),
       message: "Can arrange insured pickup if the blade set is included.",
       status: "PENDING"
     }
@@ -420,7 +425,7 @@ async function main() {
       title: "5 inch freestyle quad",
       vehicleType: "drones",
       dryWeightGrams: 393,
-      estimatedCostCents: 48700,
+      estimatedCostCents: usdToInrMinor(48700),
       thrustRatio: "6.2:1",
       riskLevel: "Low",
       note: "One thermal margin needs review before publishing."
@@ -431,7 +436,7 @@ async function main() {
       title: "5 inch freestyle quad",
       vehicleType: "drones",
       dryWeightGrams: 393,
-      estimatedCostCents: 48700,
+      estimatedCostCents: usdToInrMinor(48700),
       thrustRatio: "6.2:1",
       riskLevel: "Low",
       note: "One thermal margin needs review before publishing."
@@ -533,9 +538,9 @@ async function main() {
   });
 
   await seedPricingComparables(categoryBySlug.get("drones")!, [
-    { id: "seed-comp-evo-4bat", title: "EVO Lite+ kit, 4 batteries", condition: "Very good", soldPriceCents: 61000, soldAt: new Date("2026-05-30T12:00:00.000Z") },
-    { id: "seed-comp-evo-flymore", title: "EVO Lite+ fly more bundle", condition: "Like new", soldPriceCents: 69000, soldAt: new Date("2026-06-02T12:00:00.000Z") },
-    { id: "seed-comp-evo-case", title: "EVO Lite+ with case", condition: "Good", soldPriceCents: 56000, soldAt: new Date("2026-05-24T12:00:00.000Z") }
+    { id: "seed-comp-evo-4bat", title: "EVO Lite+ kit, 4 batteries", condition: "Very good", soldPriceCents: usdToInrMinor(61000), soldAt: new Date("2026-05-30T12:00:00.000Z") },
+    { id: "seed-comp-evo-flymore", title: "EVO Lite+ fly more bundle", condition: "Like new", soldPriceCents: usdToInrMinor(69000), soldAt: new Date("2026-06-02T12:00:00.000Z") },
+    { id: "seed-comp-evo-case", title: "EVO Lite+ with case", condition: "Good", soldPriceCents: usdToInrMinor(56000), soldAt: new Date("2026-05-24T12:00:00.000Z") }
   ]);
 
   await prisma.report.upsert({
@@ -670,6 +675,7 @@ async function upsertListing(input: {
       condition: input.condition,
       listingType: input.listingType,
       status: input.status,
+      currency: "INR",
       priceCents: input.priceCents,
       reserveCents: input.reserveCents,
       buyNowCents: input.buyNowCents,
@@ -687,6 +693,7 @@ async function upsertListing(input: {
       condition: input.condition,
       listingType: input.listingType,
       status: input.status,
+      currency: "INR",
       priceCents: input.priceCents,
       reserveCents: input.reserveCents,
       buyNowCents: input.buyNowCents,

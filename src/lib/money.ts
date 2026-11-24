@@ -1,8 +1,11 @@
-export function formatMoney(cents: number, currency = "USD") {
-  return new Intl.NumberFormat("en-US", {
+import { currencyLocale, DEFAULT_APPLICATION_CURRENCY } from "@/lib/currency";
+
+export function formatMoney(cents: number, currency: string = DEFAULT_APPLICATION_CURRENCY) {
+  return new Intl.NumberFormat(currencyLocale(currency), {
     style: "currency",
     currency,
-    maximumFractionDigits: 0
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
   }).format(cents / 100);
 }
 

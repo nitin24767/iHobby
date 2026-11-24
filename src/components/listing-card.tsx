@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui";
 import { formatMoney } from "@/lib/money";
 import type { Listing } from "@/types/domain";
 
-export function ListingCard({ listing }: { listing: Listing }) {
+export function ListingCard({ listing, currency = listing.currency }: { listing: Listing; currency?: string }) {
   const isAuction = listing.listingType === "AUCTION";
 
   return (
@@ -46,7 +46,7 @@ export function ListingCard({ listing }: { listing: Listing }) {
         <div className="listing-row">
           <div>
             <div className="listing-bid-label mono upper">{isAuction ? "Current bid" : "Price"}</div>
-            <div className="listing-price mono">{formatMoney(listing.priceCents, listing.currency)}</div>
+            <div className="listing-price mono">{formatMoney(listing.priceCents, currency)}</div>
           </div>
           <div className="listing-time mono">
             <Clock className="mr-1 inline" size={13} />

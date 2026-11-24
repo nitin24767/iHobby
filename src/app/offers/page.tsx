@@ -11,6 +11,7 @@ import { getCurrentActor } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
 import { can } from "@/lib/rbac";
 import { listOffersForActor } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 import type { Offer, OfferStatus, Role } from "@/types/domain";
 
 export default async function OffersPage({
@@ -29,7 +30,7 @@ export default async function OffersPage({
     );
   }
 
-  const offers = await listOffersForActor(actor);
+  const [offers, currency] = await Promise.all([listOffersForActor(actor), getApplicationCurrency()]);
   const pendingCount = offers.filter((offer) => offer.status === "PENDING").length;
 
   return (
@@ -53,7 +54,7 @@ export default async function OffersPage({
         <Card className="overflow-hidden">
           <div className="divide-y divide-[var(--line)]">
             {offers.map((offer) => (
-              <OfferRow key={offer.id} offer={offer} role={actor.role} />
+              <OfferRow key={offer.id} offer={offer} role={actor.role} currency={currency} />
             ))}
             {offers.length === 0 ? (
               <div className="p-4 text-sm text-[var(--ink-muted)]">No offers yet.</div>
@@ -65,7 +66,7 @@ export default async function OffersPage({
   );
 }
 
-function OfferRow({ offer, role }: { offer: Offer; role: Role }) {
+function OfferRow({ offer, role, currency }: { offer: Offer; role: Role; currency: string }) {
   const listingTitle = offer.listingTitle ?? "Listing";
   const participant =
     role === "SELLER"
@@ -91,7 +92,7 @@ function OfferRow({ offer, role }: { offer: Offer; role: Role }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-        <span className="mono text-base font-bold">{formatMoney(offer.amountCents)}</span>
+        <span className="mono text-base font-bold">{formatMoney(offer.amountCents, currency)}</span>
         {offer.listingSlug ? (
           <LinkButton href={`/listings/${offer.listingSlug}`} size="sm" variant="ghost">
             <ExternalLink size={13} /> Open

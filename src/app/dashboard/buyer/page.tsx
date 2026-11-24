@@ -8,6 +8,7 @@ import { getCurrentActor } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { AccessPanel } from "@/components/access-panel";
 import { getDashboardMetricsForActor, listMarketplaceListings, listWatchlistListings } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 
 export default async function BuyerDashboardPage() {
   const actor = await getCurrentActor();
@@ -20,7 +21,7 @@ export default async function BuyerDashboardPage() {
     );
   }
 
-  const saved = await listWatchlistListings(actor);
+  const [saved, currency] = await Promise.all([listWatchlistListings(actor), getApplicationCurrency()]);
   const watched = saved.length ? saved.slice(0, 3) : (await listMarketplaceListings()).slice(0, 3);
   const metrics = await getDashboardMetricsForActor(actor);
 
@@ -41,7 +42,7 @@ export default async function BuyerDashboardPage() {
         <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {watched.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
+              <ListingCard key={listing.id} listing={listing} currency={currency} />
             ))}
           </div>
           <Card className="p-5">

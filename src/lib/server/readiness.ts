@@ -45,6 +45,12 @@ function productionRequiredCheck(id: string, label: string, configured: boolean,
 function aiProviderCheck(): ReadinessCheck {
   const provider = process.env.AI_PROVIDER ?? "mock";
 
+  if (provider === "gemini") {
+    return hasEnv("GEMINI_API_KEY")
+      ? { id: "ai", label: "AI provider", status: "pass", detail: "Gemini is configured; pricing uses Gemini with Groq fallback when available." }
+      : { id: "ai", label: "AI provider", status: "warn", detail: "Gemini selected but GEMINI_API_KEY is missing." };
+  }
+
   if (provider === "deepseek") {
     return hasEnv("DEEPSEEK_API_KEY")
       ? { id: "ai", label: "AI provider", status: "pass", detail: "DeepSeek is configured." }

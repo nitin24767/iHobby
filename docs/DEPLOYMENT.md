@@ -14,7 +14,7 @@ readiness through `readyForNonPaymentLaunch`.
 - Required S3-compatible object storage and public media URL for listing media.
 - Required SMTP account for transactional email.
 - Edge or shared rate limiting for a multi-instance deployment. The built-in limiter is a bounded per-process safeguard.
-- Optional AI provider key for DeepSeek or Hugging Face.
+- Optional Gemini key for primary pricing search and Groq key for pricing fallback; other AI features follow `AI_PROVIDER`.
 
 ## Environment
 
@@ -28,6 +28,12 @@ CLERK_SECRET_KEY=""
 CLERK_WEBHOOK_SECRET=""
 
 AI_PROVIDER="mock"
+GEMINI_API_KEY=""
+GEMINI_MODEL="gemini-3.8-flash"
+GEMINI_PRICING_MODEL="gemini-3.8-flash"
+GROQ_API_KEY=""
+GROQ_MODEL="openai/gpt-oss-120b"
+GROQ_PRICING_MODEL="openai/gpt-oss-20b"
 DEEPSEEK_API_KEY=""
 DEEPSEEK_MODEL="deepseek-v4-flash"
 HUGGINGFACE_API_KEY=""

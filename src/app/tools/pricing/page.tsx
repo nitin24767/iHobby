@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui";
 import { getCurrentActor } from "@/lib/auth";
 import { can } from "@/lib/rbac";
 import { getPricingEngineData } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
+import { getPricingSearchDashboard } from "@/lib/server/pricing-searches";
 
 export default async function PricingEnginePage() {
   const actor = await getCurrentActor();
@@ -17,7 +19,11 @@ export default async function PricingEnginePage() {
     );
   }
 
-  const pricing = await getPricingEngineData("drones");
+  const [pricing, currency, searchDashboard] = await Promise.all([
+    getPricingEngineData("drones"),
+    getApplicationCurrency(),
+    getPricingSearchDashboard(actor)
+  ]);
 
   return (
     <SiteShell>
@@ -29,7 +35,7 @@ export default async function PricingEnginePage() {
         </div>
       </div>
 
-      <AiPricingEstimator pricing={pricing} />
+      <AiPricingEstimator pricing={pricing} currency={currency} searchDashboard={searchDashboard} />
     </SiteShell>
   );
 }

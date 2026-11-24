@@ -24,5 +24,7 @@ describe("rbac", () => {
     expect(can("SELLER", "seller:dashboard")).toBe(true);
     expect(can("ADMIN", "buyer:dashboard")).toBe(false);
     expect(can("ADMIN", "admin:dashboard")).toBe(true);
+    expect(can("ADMIN", "admin:manage-settings")).toBe(true);
+    expect(can("SELLER", "admin:manage-settings")).toBe(false);
   });
 });

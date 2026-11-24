@@ -189,9 +189,9 @@ async function main() {
       body: JSON.stringify({
         title: "Smoke test RC drone",
         category: "drones",
-        condition: "Good",
+        condition: "Used - Good condition",
         targetPriceCents: 45000,
-        attributes: { brand: "Autel" }
+        attributes: { brand: "Autel", model: "EVO Nano+" }
       })
     },
     (payload, status) => {

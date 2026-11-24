@@ -15,6 +15,7 @@ export type Permission =
   | "admin:dashboard"
   | "admin:moderate"
   | "admin:manage-users"
+  | "admin:manage-settings"
   | "admin:manage-categories";
 
 const permissions: Record<Role, Permission[]> = {
@@ -52,6 +53,7 @@ const permissions: Record<Role, Permission[]> = {
     "admin:dashboard",
     "admin:moderate",
     "admin:manage-users",
+    "admin:manage-settings",
     "admin:manage-categories"
   ]
 };

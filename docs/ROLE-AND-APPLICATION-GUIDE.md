@@ -14,7 +14,7 @@ Users can browse RC listings, open listing detail pages, view listing media, sea
 
 Sellers can create listings, upload multiple listing images, edit their own eligible listings, pause or resume active inventory, archive eligible listings, receive offers, and communicate with buyers. Editing an active listing returns it to moderation so the changed sale terms can be reviewed.
 
-Admins can moderate listings, review reports, approve seller applications, manage users, manage categories, and inspect audit logs.
+Admins can moderate listings, review reports, approve seller applications, manage users, manage categories, set the application-wide currency, and inspect audit logs.
 
 ## Authentication And Accounts
 
@@ -174,6 +174,7 @@ What admins can do:
 - Change user roles.
 - Suspend, reactivate, or close accounts.
 - Manage marketplace categories and taxonomy.
+- Set the application-wide currency. This changes the denomination but does not perform exchange-rate conversion.
 - View audit logs.
 - View marketplace messages and operational conversations.
 - Create listings when needed.
@@ -192,6 +193,7 @@ Main routes:
 - `/admin/seller-applications`
 - `/admin/users`
 - `/admin/categories`
+- `/admin/settings`
 - `/admin/audit`
 - `/messages`
 - `/offers`
@@ -263,7 +265,9 @@ Listing image uploads use local storage under `public/uploads/listings` only for
 
 The email service uses SMTP whenever `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (or `SMTP_PASSWORD`), and `SMTP_FROM` are configured; otherwise it mock-logs only in development. SMTP is configured in the local ignored environment file. Production must install its own secret values; readiness reports block launch when they are missing.
 
-AI tools use mock guidance when no AI provider is configured. DeepSeek, Groq, and Hugging Face are supported through environment variables. The local environment uses Groq for live AI pricing and repair guidance; the pricing screen also recalculates its displayed comparable-sale range from persisted market data after each estimate.
+AI tools use mock guidance when no AI provider is configured. DeepSeek, Groq, and Hugging Face are supported through environment variables. With Groq configured, the pricing screen uses the Compound search model to research current Indian market pages, exposes exact evidence links, distinguishes asking/retail/sold evidence, adjusts for condition, limits extreme outliers, and reports confidence.
+
+The Marketplace Agent at `/tools/agent` uses a bounded plan-act-observe loop. Given a member goal, the model selects from approved read-only tools, inspects each observation, adapts the next step, and produces an outcome. Agent runs and their tool trace are persisted in `AiJob` for accountability. The agent can search marketplace inventory, inspect listing details, calculate pricing guidance, and read role-scoped account activity. It cannot autonomously bid, offer, message, alter listings, or perform admin mutations.
 
 ## Marketplace Tools
 
@@ -271,7 +275,7 @@ The build planner saves each member's latest configuration, including entered pa
 
 The repair advisor creates and saves a diagnosis session from the supplied symptoms. It stores the issue, an AI-generated safety-first diagnostic response when the configured provider is available, and a checklist that can be reused for repair or resale disclosure. If the provider is unavailable, the stored response is explicitly labelled as an automated safety fallback.
 
-The pricing engine sends the entered listing details to the configured AI provider and refreshes conservative, recommended, and buy-now guidance using accepted marketplace offers for the selected RC vehicle family. It does not claim to use external sales data; when no accepted offers exist, the interface clearly says that guidance is limited to the entered asking price.
+The pricing engine researches current India-market evidence and combines it with relevant persisted sold records. Current sourced evidence takes precedence because older internal records may predate a currency change. The seller's entered asking price is used only to report its variance from the evidence median and never as the estimate itself. When no credible evidence exists, the application withholds the estimate instead of fabricating a range.
 
 ## Current Production Scope
 

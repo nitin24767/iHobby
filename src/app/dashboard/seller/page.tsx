@@ -9,6 +9,7 @@ import { getCurrentActor } from "@/lib/auth";
 import { formatMoney } from "@/lib/money";
 import { can } from "@/lib/rbac";
 import { getDashboardMetricsForActor, listOffersForActor, listSellerInventory } from "@/lib/server/marketplace";
+import { getApplicationCurrency } from "@/lib/server/application-settings";
 
 export default async function SellerDashboardPage() {
   const actor = await getCurrentActor();
@@ -21,7 +22,7 @@ export default async function SellerDashboardPage() {
     );
   }
 
-  const inventory = await listSellerInventory(actor);
+  const [inventory, currency] = await Promise.all([listSellerInventory(actor), getApplicationCurrency()]);
   const activeInventory = inventory.filter((listing) => listing.status === "ACTIVE");
   const offers = await listOffersForActor(actor);
   const metrics = await getDashboardMetricsForActor(actor);
@@ -66,7 +67,7 @@ export default async function SellerDashboardPage() {
                     <div className="mt-1 text-sm text-[var(--ink-muted)]">{listing.hobbyName} / {listing.condition}</div>
                   </div>
                   <div className="text-left sm:text-right">
-                    <div className="font-bold">{formatMoney(listing.priceCents)}</div>
+                    <div className="font-bold">{formatMoney(listing.priceCents, currency)}</div>
                     <div className="text-xs text-[var(--ink-muted)]">{listing.stats.watchers} watchers</div>
                   </div>
                 </div>
