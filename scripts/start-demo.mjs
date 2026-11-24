@@ -44,10 +44,13 @@ async function run(command, args) {
 }
 
 try {
-  // Render Free has no pre-deploy command. Run idempotent setup before the
-  // server starts, including after a cold start. Never run the development seed.
+  // Run idempotent setup before the server starts, including after a cold start.
+  // Never run the development seed against the public demo database.
   await run("npm", ["run", "db:migrate:deploy"]);
   await run("npm", ["run", "demo:bootstrap"]);
+  if (process.env.DEMO_SEED_DATA === "true") {
+    await run("npm", ["run", "demo:seed-data"]);
+  }
   await run(process.execPath, [
     "node_modules/next/dist/bin/next",
     "start",
