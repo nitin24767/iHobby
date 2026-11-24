@@ -4,6 +4,7 @@ import { isClerkAuthConfigured } from "@/lib/auth";
 import { defaultDashboardFor } from "@/lib/rbac";
 import { clientRateLimitKey, rateLimit, retryAfterSeconds } from "@/lib/rate-limit";
 import { localSessionCookieName, signInWithPassword } from "@/lib/server/local-auth";
+import { redirectToPath } from "@/lib/server/redirect";
 
 const signInSchema = z.object({
   email: z.string().trim().email(),
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
     return invalidResponse(request, result.mode, result.mode === "inactive" ? 403 : 401);
   }
 
-  const response = NextResponse.redirect(new URL(defaultDashboardFor(result.actor.role), request.url), { status: 303 });
+  const response = redirectToPath(defaultDashboardFor(result.actor.role));
   response.cookies.set(localSessionCookieName, result.token, sessionCookieOptions(result.maxAge));
   response.cookies.delete("ihw_demo_account");
   response.cookies.delete("ihw_demo_role");
@@ -43,14 +44,14 @@ export async function POST(request: Request) {
 function rateLimitedResponse(request: Request, result: ReturnType<typeof rateLimit>) {
   const headers = { "Retry-After": String(retryAfterSeconds(result)) };
   if (request.headers.get("accept")?.includes("text/html")) {
-    return NextResponse.redirect(new URL("/sign-in?status=rate-limited", request.url), { status: 303, headers });
+    return redirectToPath("/sign-in?status=rate-limited", headers);
   }
   return NextResponse.json({ error: "Too many sign-in attempts. Try again later." }, { status: 429, headers });
 }
 
 function invalidResponse(request: Request, status: string, code: 400 | 401 | 403) {
   if (request.headers.get("accept")?.includes("text/html")) {
-    return NextResponse.redirect(new URL(`/sign-in?status=${status}`, request.url), { status: 303 });
+    return redirectToPath(`/sign-in?status=${status}`);
   }
 
   return NextResponse.json({ error: status }, { status: code });
