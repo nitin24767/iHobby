@@ -1,5 +1,10 @@
 # Free public demo deployment
 
+The current hosted demo uses Railway with the existing Neon database. See
+[Railway demo deployment](RAILWAY-DEMO.md) for that configuration and the
+optional isolated sample-data setup. The Render instructions below describe
+the alternative prepared during the initial hosting review.
+
 This guide deploys the existing Next.js application on **Render Free** with an
 external **Neon Free PostgreSQL database** and S3-compatible image storage.
 The application remains a working database-backed demo with real registration,
@@ -173,8 +178,9 @@ passing liveness check only means the web server is responding; it does not
 prove database or storage connectivity. Readiness checks for storage validate
 configuration presence, so an upload/read smoke check is still required.
 
-The bootstrap creates categories and one admin only, not fabricated users or
-marketplace inventory. Add initial demo listings through the app.
+The bootstrap creates categories and one admin only. Add demo listings through
+the app, or explicitly enable the separate insert-only sample-data step described
+in [Railway demo deployment](RAILWAY-DEMO.md#optional-sample-data).
 
 ## Reference documentation
 
