@@ -2,6 +2,10 @@
 
 This runbook covers the non-payment application path. Payment provider setup is intentionally excluded until a provider is chosen.
 
+For the separate free demo configuration, use [FREE-DEMO.md](FREE-DEMO.md).
+Demo readiness is reported through `readyForDemo`; it never claims production
+readiness through `readyForNonPaymentLaunch`.
+
 ## Required And Optional Services
 
 - PostgreSQL database with backups enabled.
