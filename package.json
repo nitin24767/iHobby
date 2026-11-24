@@ -16,6 +16,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "demo:bootstrap": "tsx scripts/bootstrap-demo.ts",
+    "demo:seed-data": "tsx scripts/seed-demo-data.ts",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status"

@@ -1,6 +1,8 @@
 # iHobbyWorld
 
-For the free public demonstration setup, see [Free demo deployment](docs/FREE-DEMO.md)
+For the current Railway demonstration setup, latest-main updates, and optional
+test accounts, see [Railway demo deployment](docs/RAILWAY-DEMO.md).
+For the original free public demonstration setup, see [Free demo deployment](docs/FREE-DEMO.md)
 and the included `render.yaml`. The demo uses explicit `DEPLOYMENT_MODE=demo`,
 external PostgreSQL and image storage, built-in login, mock AI and no email delivery.
 
