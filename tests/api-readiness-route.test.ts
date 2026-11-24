@@ -52,6 +52,8 @@ describe("readiness health API route", () => {
   it("returns the readiness report for admins", async () => {
     vi.mocked(getCurrentActor).mockResolvedValue(adminActor);
     vi.mocked(getReadinessReport).mockResolvedValue({
+      deploymentMode: "production",
+      readyForDemo: false,
       readyForNonPaymentLaunch: true,
       generatedAt: "2026-07-03T12:00:00.000Z",
       checks: [],
@@ -63,6 +65,8 @@ describe("readiness health API route", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
+      deploymentMode: "production",
+      readyForDemo: false,
       readyForNonPaymentLaunch: true,
       generatedAt: "2026-07-03T12:00:00.000Z",
       checks: [],
@@ -74,10 +78,51 @@ describe("readiness health API route", () => {
   it("returns service unavailable when readiness has blockers", async () => {
     vi.mocked(getCurrentActor).mockResolvedValue(adminActor);
     vi.mocked(getReadinessReport).mockResolvedValue({
+      deploymentMode: "production",
+      readyForDemo: false,
       readyForNonPaymentLaunch: false,
       generatedAt: "2026-07-03T12:00:00.000Z",
       checks: [],
       blockers: ["Database unavailable"],
+      warnings: []
+    });
+
+    const response = await GET();
+
+    expect(response.status).toBe(503);
+  });
+
+  it("returns demo readiness without claiming production launch readiness", async () => {
+    vi.mocked(getCurrentActor).mockResolvedValue(adminActor);
+    vi.mocked(getReadinessReport).mockResolvedValue({
+      deploymentMode: "demo",
+      readyForDemo: true,
+      readyForNonPaymentLaunch: false,
+      generatedAt: "2026-07-03T12:00:00.000Z",
+      checks: [],
+      blockers: [],
+      warnings: ["Email delivery is disabled for this demo."]
+    });
+
+    const response = await GET();
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      deploymentMode: "demo",
+      readyForDemo: true,
+      readyForNonPaymentLaunch: false
+    });
+  });
+
+  it("returns service unavailable for a demo with unmet core requirements", async () => {
+    vi.mocked(getCurrentActor).mockResolvedValue(adminActor);
+    vi.mocked(getReadinessReport).mockResolvedValue({
+      deploymentMode: "demo",
+      readyForDemo: false,
+      readyForNonPaymentLaunch: false,
+      generatedAt: "2026-07-03T12:00:00.000Z",
+      checks: [],
+      blockers: ["Media storage is not configured"],
       warnings: []
     });
 
