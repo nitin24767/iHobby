@@ -1,5 +1,9 @@
 # iHobbyWorld
 
+For the free public demonstration setup, see [Free demo deployment](docs/FREE-DEMO.md)
+and the included `render.yaml`. The demo uses explicit `DEPLOYMENT_MODE=demo`,
+external PostgreSQL and image storage, built-in login, mock AI and no email delivery.
+
 iHobbyWorld is a production-oriented full-stack rebuild of the original `iHobbyWorld.html` mockup. The current product scope is intentionally RC-only and follows the mockup closely: marketplace workflows for RC vehicles and components across drones, helicopters, planes, and cars.
 
 For future AI agents, also read [CLAUDE.md](./CLAUDE.md). It contains the detailed handoff context, implementation decisions, and current known gaps. Deployment and provider verification docs live in [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) and [docs/PROVIDER-SMOKE.md](./docs/PROVIDER-SMOKE.md).

@@ -1,0 +1,45 @@
+# Free application compute only. PostgreSQL and S3-compatible storage are
+# external free-tier resources; this blueprint never provisions paid resources.
+services:
+  - type: web
+    name: ihobby-demo
+    runtime: node
+    plan: free
+    region: singapore
+    repo: https://github.com/nitin24767/iHobby
+    branch: codex/free-demo-render
+    autoDeployTrigger: commit
+    buildCommand: npm ci --include=dev && npm run db:generate && npm run build
+    startCommand: npm run start:demo
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.22.1
+      - key: NODE_ENV
+        value: production
+      - key: DEPLOYMENT_MODE
+        value: demo
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: AI_PROVIDER
+        value: mock
+      - key: DATABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: STORAGE_ENDPOINT
+        sync: false
+      - key: STORAGE_ACCESS_KEY_ID
+        sync: false
+      - key: STORAGE_SECRET_ACCESS_KEY
+        sync: false
+      - key: STORAGE_BUCKET
+        sync: false
+      - key: STORAGE_REGION
+        sync: false
+      - key: STORAGE_PUBLIC_URL
+        sync: false
+      - key: DEMO_ADMIN_EMAIL
+        sync: false
+      - key: DEMO_ADMIN_PASSWORD
+        sync: false

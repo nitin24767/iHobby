@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:demo": "node scripts/start-demo.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -14,9 +15,13 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "demo:bootstrap": "tsx scripts/bootstrap-demo.ts",
     "db:migrate:dev": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:status": "prisma migrate status"
+  },
+  "engines": {
+    "node": ">=24.0.0 <25"
   },
   "dependencies": {
     "@clerk/nextjs": "7.4.3",
